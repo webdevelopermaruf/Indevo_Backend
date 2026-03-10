@@ -6,6 +6,7 @@
  - login & registration api done
  - check user email is in the system
  - postman documentation started.
+ - New Package google/apiclient installed 
 
 ### Fixed
 

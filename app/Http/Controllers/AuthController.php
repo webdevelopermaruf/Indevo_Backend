@@ -73,14 +73,12 @@ class AuthController extends Controller
             return $this->success(
                 'User registered successfully',
                 [
-                    'user' => $user->only(['firstname','lastname','email','dob','role']),
+                    'user' => [...$user->only(['firstname', 'lastname', 'email', 'dob', 'currency']), 'age' => $user->age],
                     'access-token' => $token
-                ],
-                HttpStatus::CREATED
+                ],HttpStatus::CREATED
             );
 
         } catch (\Exception $e) {
-
             return $this->error(
                 'Registration failed', null,
                 HttpStatus::INTERNAL_SERVER_ERROR
@@ -88,6 +86,52 @@ class AuthController extends Controller
         }
     }
 
+
+    /**
+     * handles OAuth redirect from Google exchanges code for access token, gets user info and login the user.
+     */
+    public function googleLogin(Request $request): ApiResponseData
+    {
+        try {
+            $request->validate([
+                'id_token' => 'required|string',
+            ]);
+
+            $client = new \Google_Client(['client_id' => config('services.google.client_id')]);
+            $payload = $client->verifyIdToken($request->id_token);
+
+            if (!$payload) {
+                return $this->error('Invalid Google token', null, 401);
+            }
+
+            $googleId = $payload['sub'];
+            $email    = $payload['email'];
+            $name     = $payload['name'] ?? null;
+
+            $user = User::where('google_id', $googleId)->orWhere('email', $email)->first();
+
+            if ($user) {
+                // If user exists, log in
+                $token = $user->createToken('api-token')->plainTextToken;
+                return $this->success('Login successful', [
+                    'user'  => $user->only(['firstname','lastname','email','role']),
+                    'token' => $token
+                ]);
+            }
+
+            // User doesn't exist → require additional info
+            return $this->success('Additional info required', [
+                'google' => [
+                    'google_id' => $googleId,
+                    'email'     => $email,
+                    'firstname' => $name ? explode(' ', $name)[0] : null,
+                    'lastname'  => $name ? explode(' ', $name, 2)[1] ?? null : null,
+                ]
+            ], 206); // 206 Partial Content
+        }catch (\Exception $e) {
+            return $this->error('Something went wrong', null, HttpStatus::INTERNAL_SERVER_ERROR);
+        }
+    }
 
     /**
      * if unauthorised then return json error

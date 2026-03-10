@@ -10,8 +10,8 @@ class ApiResponseData implements Responsable
     public function __construct(
         public readonly bool        $success,
         public readonly string      $message,
-        public readonly array|null  $data   = null,
-        public readonly array|null  $errors = null,
+        public readonly ?array  $data   = null,
+        public readonly ?array  $errors = null,
         public readonly int         $code   = 200,
     ) {}
 

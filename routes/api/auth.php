@@ -8,6 +8,9 @@ Route::prefix('auth')->group(function(){
     Route::post('registration',[Authcontroller::class , 'register']);
     Route::post('login', [Authcontroller::class , 'login']);
     Route::get('unauthorised', [\App\Http\Controllers\AuthController::class , 'unauthorised'])->name('login');
+
+    Route::post('continue-google',[Authcontroller::class , 'googleLogin']);
+//    Route::post('continue-apple',[Authcontroller::class , 'apple']);
+
+
 });
-//Route::get('continue-google',[Authcontroller::class , 'google']);
-//Route::get('continue-apple',[Authcontroller::class , 'apple']);

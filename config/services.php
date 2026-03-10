@@ -34,5 +34,9 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
+    'google'=> [
+        'client_id' =>  '',
+        // other credentials should be here.
+    ]
 
 ];
