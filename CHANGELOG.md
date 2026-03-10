@@ -7,11 +7,10 @@
  - check user email is in the system
  - postman documentation started.
  - New Package google/apiclient installed 
+ - Expense module added
 
 ### Fixed
 
-
 ### Changed
-
-
+ - enums introduced in App\Enums
 ### Removed
