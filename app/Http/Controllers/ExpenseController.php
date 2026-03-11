@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 class ExpenseController extends Controller
 {
     /**
-     * Display a listing of the expenses in the system.
+     * Display this month expenses in the system.
      */
     public function index()
     {
