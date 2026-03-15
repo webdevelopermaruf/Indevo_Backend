@@ -2,13 +2,13 @@
 
 namespace App\Http\Requests;
 
-use App\Enums\ReminderCategories;
+use App\Enums\GoalCategories;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Validation\Rules\Enum;
 
-class ReminderRequest extends FormRequest
+class GoalRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -26,15 +26,23 @@ class ReminderRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'description' => 'required|string|max:255',
-            'priority'    => ['required', 'in:low,medium,high'],
-            'category'    => ['required', new Enum(ReminderCategories::class)],
-            'due_time'    => 'nullable|date_format:H:i',
-            'due_date'    => 'required|date|after_or_equal:today',
-            'recurrence'  => ['required', 'in:once,daily,weekly,monthly'],
-            'place'       => 'nullable|string|max:255',
-            'note'        => 'nullable|string',
+            'id' => 'nullable|integer|exists:goals,id',
+            'title' => 'required|string|max:255',
+            'category' => ['required', new Enum(GoalCategories::class)],
+            'deadline_date' => 'required|date_format:Y-m-d',
+            'deadline_time' => 'required|date_format:H:i',
+            'note' => 'nullable',
+            'reminders'=> 'required'
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        // casting
+        $this->merge([
+            'id' => $this->id !== null ? (int) $this->id : null,
+            'reminders' => json_decode($this['reminders']),
+        ]);
     }
 
     public function failedValidation(Validator $validator)

@@ -16,6 +16,8 @@
 
 ### Changed
  - enums introduced in App\Enums
- - enums impleted in db migrations
+ - enums implemented in db migrations
+ - enums implemented in ExpenseRequest
+ - failedValidator function in ReminderRequest
 
 ### Removed

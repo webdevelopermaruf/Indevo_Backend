@@ -15,6 +15,7 @@ return new class extends Migration
         Schema::create('reminders', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('goal_id')->nullable()->constrained()->nullOnDelete();
             $table->string('description');
             $table->enum('priority', ['low', 'medium', 'high'])->default('medium');
             $table->enum('category',   array_column(ReminderCategories::cases(),   'value'))->default(ReminderCategories::Other->value);

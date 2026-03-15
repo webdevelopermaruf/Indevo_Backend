@@ -20,3 +20,5 @@ Route::post('/reminder/complete', [ReminderController::class, 'markAsCompleted']
 // goals routes
 
 Route::get('/goals', [GoalController::class, 'index']);
+Route::post('/goal', [GoalController::class, 'store']);
+Route::post('/update/goal', [GoalController::class, 'update']);

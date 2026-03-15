@@ -2,12 +2,16 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Goal extends Model
 {
     protected $fillable = [
-        'description',
+        'user_id',
+        'title',
         'category',
         'deadline_date',
         'deadline_time',
@@ -21,6 +25,18 @@ class Goal extends Model
         static::addGlobalScope('user_goal', function ($builder) {
             $builder->where('user_id', auth()->id());
         });
+    }
+
+    #[Scope]
+    protected function currentMonth(Builder $query):void
+    {
+        $query->whereYear('deadline_date', date('Y'))
+            ->whereMonth('deadline_date', date('m'));
+    }
+
+    public function reminders(): HasMany
+    {
+        return $this->hasMany(Reminder::class, 'goal_id', 'id');
     }
 
     public function toResponseArray(): array

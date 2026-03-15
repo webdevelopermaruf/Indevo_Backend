@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\ReminderCategories;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Reminder extends Model
 {
@@ -37,6 +38,11 @@ class Reminder extends Model
         });
     }
 
+    public function goal(): belongsTo
+    {
+        return $this->belongsTo(Goal::class,  'goal_id', 'id');
+    }
+
     public function toResponseArray(): array
     {
         return [
@@ -50,7 +56,7 @@ class Reminder extends Model
             'place'        => $this->place,
             'note'         => $this->note,
             'is_completed' => $this->is_completed,
-            'completed_at' => $this->completed_at->format('Y-m-d H:i'),
+            'completed_at' => $this->completed_at?->format('Y-m-d H:i'),
             'created_at'   => $this->created_at->format('Y-m-d H:i'),
         ];
     }
