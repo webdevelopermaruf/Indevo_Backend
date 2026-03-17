@@ -9,6 +9,7 @@
  - New Package google/apiclient installed 
  - Expense module added
  - Reminder module added
+ - Goal & Skill module added
 
 ### Fixed
  - expense & reminders category using enum classes.

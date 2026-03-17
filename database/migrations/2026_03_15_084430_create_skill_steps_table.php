@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('skill_steps', function (Blueprint $table) {
             $table->id();
             $table->foreignId('skill_id')->constrained()->cascadeOnDelete();
+            $table->integer('position');
             $table->string('title');
             $table->string('picture')->nullable();
             $table->string('short_description')->nullable();

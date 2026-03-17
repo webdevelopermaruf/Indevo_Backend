@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\GoalController;
 use App\Http\Controllers\ReminderController;
+use App\Http\Controllers\SkillController;
 use Illuminate\Support\Facades\Route;
 
 // expenses routes
@@ -22,3 +23,9 @@ Route::post('/reminder/complete', [ReminderController::class, 'markAsCompleted']
 Route::get('/goals', [GoalController::class, 'index']);
 Route::post('/goal', [GoalController::class, 'store']);
 Route::post('/update/goal', [GoalController::class, 'update']);
+
+// Skills routes
+
+Route::get('/skills', [SkillController::class, 'index']);
+Route::get('/skill/{id}', [SkillController::class, 'show']);
+Route::get('/update/skill', [SkillController::class, 'update']);
