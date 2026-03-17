@@ -55,19 +55,22 @@ class SkillController extends Controller
         try{
             $req = $request->validate([
                 'step_id'  => 'required',
-                'action' => 'required'
+                'action' => 'required' // it must be "update"
             ]);
 
-            UserSkill::insert([
-                'skill_id' => $req['skill_id'],
-                'user_id' => auth()->id(),
-                'is_completed' => $req['action'] === 'completed' ? 1 : 0,
-                'completed_at' => now(),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            return $this->success('User skill record updated', $req['action'], HttpStatus::OK);
+            if($req['action'] == 'update'){
+                UserSkill::insert([
+                    'skill_steps_id' => $req['step_id'],
+                    'user_id' => auth()->id(),
+                    'is_completed' => $req['action'] === 'completed' ? 1 : 0,
+                    'completed_at' => now(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+                return $this->success('User skill record updated', null, HttpStatus::OK);
+            }else{
+                return $this->error('Bad Request', null, HttpStatus::BAD_REQUEST);
+            }
 
         }catch (\Exception $exception){
             return $this->error($exception->getMessage(), null, HttpStatus::INTERNAL_SERVER_ERROR);

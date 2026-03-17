@@ -28,4 +28,4 @@ Route::post('/update/goal', [GoalController::class, 'update']);
 
 Route::get('/skills', [SkillController::class, 'index']);
 Route::get('/skill/{id}', [SkillController::class, 'show']);
-Route::get('/update/skill', [SkillController::class, 'update']);
+Route::post('/update/skill', [SkillController::class, 'update']);
