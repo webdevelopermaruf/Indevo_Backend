@@ -5,33 +5,101 @@ namespace App\Http\Controllers;
 use App\Http\Constants\HttpStatus;
 use App\Http\DTO\ApiResponseData;
 use App\Http\Requests\Registration;
+use App\Mail\VerifyEmail;
+use App\Models\EmailVerificationCode;
+use App\Models\ForgotPassword;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthController extends Controller
 {
+
+    /**
+     * handles refresh token of logged in user.
+     */
+    public function refresh(Request $request)
+    {
+        try {
+            $refreshToken = $request->cookie('refresh_token');
+            $token = PersonalAccessToken::findToken($refreshToken);
+            $user = $token->tokenable;
+
+            // Revoke old access token & refresh tokens
+            $user->tokens()->delete();
+
+            // Issue new short-lived access token
+            $newAccessToken = $user->createToken(
+                'indevo-user-access-token',
+                ['*'],
+                now()->addMinutes(15)
+            )->plainTextToken;
+
+            $refreshToken = $user->createToken(
+                'indevo-user-refresh-token',
+                ['refresh'],
+                now()->addDays(30)
+            )->plainTextToken;
+
+
+            return $this->success('Refreshed successfully', [
+                'user' => [...$user->only(['firstname', 'lastname', 'email', 'dob', 'currency']), 'age' => $user->age],
+                'access_token' => $newAccessToken,
+                'refresh_token' => $refreshToken,
+                'token_type'   => 'Bearer',
+                'expires_in'   => 900,
+            ], HttpStatus::OK);
+
+        } catch (\Exception|\Throwable $e) {
+            return $this->error('Something went wrong', null, HttpStatus::INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
     /**
      * User login to the system
      */
     public function login(Request $request)
     {
-        $req = $request->validate([
-            'email'    => 'required|email',
-            'password' => 'required|string',
-        ]);
+        try{
+            $req = $request->validate([
+                'email'    => 'required|email',
+                'password' => 'required|string',
+            ]);
 
-        if (!Auth::attempt($req)) {
-            return $this->error('Invalid credentials', code: 401);
+            if (!Auth::attempt($req)) {
+                return $this->error('Invalid credentials', code: 401);
+            }
+
+            $user  = Auth::user();
+            $user->tokens()->delete();
+            $accessToken = $user->createToken(
+                'indevo-user-access-token',
+                ['*'],
+                now()->addMinutes(15)
+            )->plainTextToken;
+
+            $refreshToken = $user->createToken(
+                'indevo-user-refresh-token',
+                ['refresh'],
+                now()->addDays(30)
+            )->plainTextToken;
+
+
+            return $this->success('Login Successful', [
+                'user'  => [...$user->only(['firstname', 'lastname', 'email', 'dob', 'currency']), 'age' => $user->age],
+                'access_token' => $accessToken,
+                'refresh_token' => $refreshToken,
+                'token_type'   => 'Bearer',
+                'expires_in'   => 900,
+            ]);
+        }catch (\Exception $e){
+            return $this->error('Something went wrong', null, HttpStatus::INTERNAL_SERVER_ERROR);
         }
-
-        $user  = Auth::user();
-        $token = $user->createToken('indevo-user-access-token')->plainTextToken;
-        return $this->success('Login Successful', [
-            'user'  => [...$user->only(['firstname', 'lastname', 'email', 'dob', 'currency']), 'age' => $user->age],
-            'token' => $token,
-        ]);
     }
 
     /**
@@ -59,22 +127,36 @@ class AuthController extends Controller
         try {
 
             $req = $request->validated();
-            $user = User::create([
-                'firstname' => $req['firstname'],
-                'lastname'  => $req['lastname'],
-                'email'     => $req['email'],
-                'dob'       => $req['dob'],
-                'currency'  => $req['currency'],
-                'password'  => Hash::make($req['password']),
-                'hobbies'   => $req['hobbies'] ?? null,
-                'role'      => 'user'
-            ]);
-            $token = $user->createToken('api-token')->plainTextToken;
+            $code = random_int(100000, 999999);
+            $user = DB::transaction(function () use ($req, $code) {
+                $user = User::create([
+                    'firstname' => $req['firstname'],
+                    'lastname'  => $req['lastname'],
+                    'email'     => $req['email'],
+                    'dob'       => $req['dob'],
+                    'currency'  => $req['currency'],
+                    'password'  => Hash::make($req['password']),
+                    'hobbies'   => $req['hobbies'] ?? null,
+                    'role'      => 'user'
+                ]);
+
+                EmailVerificationCode::updateOrCreate(
+                    ['email' => $user->email],
+                    ['code' => $code, 'expires_at' => now()->addMinutes(15)]
+                );
+
+                return $user;
+            });
+
+            $token = $user->createToken('indevo-user-access-token')->plainTextToken;
+            Mail::to($user->email)->send(new VerifyEmail($user->email, $code));
             return $this->success(
                 'User registered successfully',
                 [
                     'user' => [...$user->only(['firstname', 'lastname', 'email', 'dob', 'currency']), 'age' => $user->age],
-                    'access-token' => $token
+                    'access-token' => $token,
+                    'token_type'   => 'Bearer',
+                    'expires_in'   => 900,
                 ],HttpStatus::CREATED
             );
 
@@ -84,6 +166,31 @@ class AuthController extends Controller
                 HttpStatus::INTERNAL_SERVER_ERROR
             );
         }
+    }
+
+    public function verifyEmail(Request $request) : ApiResponseData
+    {
+       try{
+
+           $validated_data = $request->validate([
+               'email' => 'required|email',
+               'code'  => 'required|integer'
+           ]);
+
+           $check = EmailVerificationCode::where('email', $validated_data['email'])->where('code', $validated_data['code'])->first();
+           if($check){
+               $user = User::where('email', $validated_data['email'])->update(['email_verified_at' => now()]);
+               return $this->success('Email verified successfully', null,HttpStatus::OK);
+           }else{
+               return $this->error('Email Unverified', null, HttpStatus::INTERNAL_SERVER_ERROR);
+           }
+
+       }catch(\Exception $e){
+           return $this->error(
+               'Email Verification failed', null,
+               HttpStatus::INTERNAL_SERVER_ERROR
+           );
+       }
     }
 
 
@@ -112,7 +219,7 @@ class AuthController extends Controller
 
             if ($user) {
                 // If user exists, log in
-                $token = $user->createToken('api-token')->plainTextToken;
+                $token = $user->createToken('indevo-user-access-token')->plainTextToken;
                 return $this->success('Login successful', [
                     'user'  => $user->only(['firstname','lastname','email','role']),
                     'token' => $token
@@ -130,6 +237,47 @@ class AuthController extends Controller
             ], 206); // 206 Partial Content
         }catch (\Exception $e) {
             return $this->error('Something went wrong', null, HttpStatus::INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+    /**
+     * user forgot password via email verification.
+     */
+    public function forgot(Request $request): ApiResponseData{
+        try{
+            $validated_data = $request->validate([
+                'email' => 'required|email|exists:users,email',
+            ]);
+
+            $code = random_int(100000, 999999);
+
+            ForgotPassword::updateOrCreate(
+                ['email' => $validated_data['email']],
+                ['code' => $code, 'expires_at' => now()->addMinutes(15), 'updated_at' => now(), 'created_at' => now()]
+            );
+    //            Mail::to($validated_data['email'])->send(new VerifyEmail($validated_data['email'], $code));
+            return $this->success('Email Sent', null, HttpStatus::OK);
+        }catch(\Exception $e){
+            return $this->error(
+                'Something went wrong', null,
+                HttpStatus::INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
+    /**
+     * user logout via token deletion.
+     */
+
+    public function logout(Request $request)
+    {
+        try{
+            $request->user()->tokens()->delete();
+        }catch(\Exception $e){
+            return $this->error('Something went wrong', null, HttpStatus::INTERNAL_SERVER_ERROR);
+        }finally{
+            return $this->success('Logged out successfully', null, HttpStatus::OK);
         }
     }
 

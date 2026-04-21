@@ -21,6 +21,7 @@ return new class extends Migration
             $table->string('password');
             $table->string('currency');
             $table->string('hobbies');
+            $table->json('preference')->nullable();
             $table->enum('role',['admin','user'])->default('user');
             $table->rememberToken();
             $table->timestamps();

@@ -5,7 +5,16 @@ use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\GoalController;
 use App\Http\Controllers\ReminderController;
 use App\Http\Controllers\SkillController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
+
+
+// user routes
+Route::get('/me', [UserController::class, 'index']);
+Route::post('/change/name', [UserController::class, 'nameChange']);
+Route::post('/change/password', [UserController::class, 'passwordChange']);
+Route::post('/preference', [UserController::class, 'preference']);
+
 
 // expenses routes
 
