@@ -47,7 +47,7 @@ class AuthController extends Controller
 
 
             return $this->success('Refreshed successfully', [
-                'user' => [...$user->only(['firstname', 'lastname', 'email', 'dob', 'currency']), 'age' => $user->age],
+                'user' => [...$user->only(['firstname', 'lastname', 'email', 'dob', 'currency']), 'age' => $user->age, 'preferences' => $user->preferences],
                 'access_token' => $newAccessToken,
                 'refresh_token' => $refreshToken,
                 'token_type'   => 'Bearer',
@@ -91,7 +91,7 @@ class AuthController extends Controller
 
 
             return $this->success('Login Successful', [
-                'user'  => [...$user->only(['firstname', 'lastname', 'email', 'dob', 'currency']), 'age' => $user->age],
+                'user'  => [...$user->only(['firstname', 'lastname', 'email', 'dob', 'currency']), 'age' => $user->age, 'preferences' => $user->preferences],
                 'access_token' => $accessToken,
                 'refresh_token' => $refreshToken,
                 'token_type'   => 'Bearer',
@@ -153,7 +153,7 @@ class AuthController extends Controller
             return $this->success(
                 'User registered successfully',
                 [
-                    'user' => [...$user->only(['firstname', 'lastname', 'email', 'dob', 'currency']), 'age' => $user->age],
+                    'user' => [...$user->only(['firstname', 'lastname', 'email', 'dob', 'currency']), 'age' => $user->age, 'preferences' => $user->preferences],
                     'access-token' => $token,
                     'token_type'   => 'Bearer',
                     'expires_in'   => 900,

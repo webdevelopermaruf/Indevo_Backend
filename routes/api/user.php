@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/me', [UserController::class, 'index']);
 Route::post('/change/name', [UserController::class, 'nameChange']);
 Route::post('/change/password', [UserController::class, 'passwordChange']);
-Route::post('/preference', [UserController::class, 'preference']);
+Route::post('/change/preference', [UserController::class, 'preference']);
 
 
 // expenses routes

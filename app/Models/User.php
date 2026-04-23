@@ -55,10 +55,14 @@ class User extends Authenticatable
         ];
     }
 
-    protected $appends = ['age'];
+    protected $appends = ['age', 'preferences'];
 
     public function getAgeAttribute(): int
     {
         return Carbon::parse($this->dob)->age;
+    }
+    public function getPreferencesAttribute(): array
+    {
+        return json_decode($this->preference, true) ?? [];
     }
 }

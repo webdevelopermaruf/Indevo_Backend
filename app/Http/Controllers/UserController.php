@@ -70,6 +70,7 @@ class UserController extends Controller
     {
         try{
             $validated = $request->validate([
+                'currency' => 'required',
                 'dark_mode' => 'required|boolean',
                 'push_notification' => 'required|boolean',
                 'reminder_alert' => 'required|boolean',
@@ -78,6 +79,7 @@ class UserController extends Controller
 
             $user = auth()->user();
             $user->forceFill([
+                'currency' => $validated['currency'],
                 'preference' => json_encode([
                     'dark_mode' => $validated['dark_mode'],
                     'push_notification' => $validated['push_notification'],
@@ -85,7 +87,6 @@ class UserController extends Controller
                     'goal_deadline_alert' => $validated['goal_deadline_alert'],
                 ], true),
             ]);
-
             $user->save();
             return $this->success('Preference updated successfully', null, HttpStatus::OK);
         }catch(\Exception $e){
