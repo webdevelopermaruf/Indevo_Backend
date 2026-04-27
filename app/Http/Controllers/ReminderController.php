@@ -97,4 +97,14 @@ class ReminderController extends Controller
             return $this->error($exception->getMessage(), null, HttpStatus::INTERNAL_SERVER_ERROR);
         }
     }
+    public function destroy($id)
+{
+    try {
+        $reminder = Reminder::findOrFail($id);
+        $reminder->delete();
+        return $this->success('Reminder deleted', null, HttpStatus::OK);
+    } catch (\Exception $exception) {
+        return $this->error($exception->getMessage(), null, HttpStatus::INTERNAL_SERVER_ERROR);
+    }
+}
 }

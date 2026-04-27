@@ -26,12 +26,14 @@ Route::post('/expense', [ExpenseController::class, 'store']);
 Route::get('/reminders', [ReminderController::class, 'index']);
 Route::post('/reminder', [ReminderController::class, 'store']);
 Route::post('/reminder/complete', [ReminderController::class, 'markAsCompleted']);
+Route::delete('/reminder/{id}', [ReminderController::class, 'destroy']);
 
 // goals routes
 
 Route::get('/goals', [GoalController::class, 'index']);
 Route::post('/goal', [GoalController::class, 'store']);
 Route::post('/update/goal', [GoalController::class, 'update']);
+Route::delete('/goal/{id}', [GoalController::class, 'destroy']);
 
 // Skills routes
 
