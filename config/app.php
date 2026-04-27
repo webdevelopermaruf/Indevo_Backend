@@ -65,8 +65,7 @@ return [
     |
     */
 
-    'timezone' => 'UTC',
-
+    'timezone' => 'Europe/London', // was 'UTC'
     /*
     |--------------------------------------------------------------------------
     | Application Locale Configuration

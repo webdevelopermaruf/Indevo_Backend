@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DeviceTokenController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\GoalController;
 use App\Http\Controllers\ReminderController;
@@ -40,3 +41,10 @@ Route::delete('/goal/{id}', [GoalController::class, 'destroy']);
 Route::get('/skills', [SkillController::class, 'index']);
 Route::get('/skill/{id}', [SkillController::class, 'show']);
 Route::post('/update/skill', [SkillController::class, 'update']);
+
+
+// token routes
+
+Route::post('/device-tokens', [DeviceTokenController::class, 'store']);
+Route::delete('/device-tokens', [DeviceTokenController::class, 'destroy']);
+

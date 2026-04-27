@@ -4,8 +4,8 @@ namespace App\Models;
 
 //use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Carbon\Carbon;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -55,14 +55,45 @@ class User extends Authenticatable
         ];
     }
 
-    protected $appends = ['age', 'preferences'];
+    protected $appends = ['age', 'preferences',  'is_reminder_alert', 'is_goal_deadline_alert', 'is_dark_mode', 'is_push_notification',];
 
     public function getAgeAttribute(): int
     {
         return Carbon::parse($this->dob)->age;
     }
-    public function getPreferencesAttribute(): array
+
+    public function getPreferencesAttribute()
     {
-        return json_decode($this->preference, true) ?? [];
+        return json_decode($this->preference) ?? [];
+    }
+
+    public function deviceTokens(): HasMany
+    {
+        return $this->hasMany(DeviceToken::class);
+    }
+
+    protected function getPreferenceValue(string $key): bool
+    {
+        return json_decode($this->preference)->$key ?? false;
+    }
+
+    public function getIsReminderAlertAttribute(): bool
+    {
+        return $this->getPreferenceValue('reminder_alert');
+    }
+
+    public function getIsGoalDeadlineAlertAttribute(): bool
+    {
+        return $this->getPreferenceValue('goal_deadline_alert');
+    }
+
+    public function getIsDarkModeAttribute(): bool
+    {
+        return $this->getPreferenceValue('dark_mode');
+    }
+
+    public function getIsPushNotificationAttribute(): bool
+    {
+        return $this->getPreferenceValue('push_notification');
     }
 }

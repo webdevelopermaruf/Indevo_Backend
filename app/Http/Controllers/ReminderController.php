@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Http\Constants\HttpStatus;
 use App\Http\Requests\ReminderRequest;
 use App\Models\Reminder;
+use App\Models\ScheduledNotification;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ReminderController extends Controller
 {
@@ -52,17 +54,117 @@ class ReminderController extends Controller
 
     // Inserting new expenses in the system.
 
-    public function store(ReminderRequest $request){
+    public function store(ReminderRequest $request)
+    {
         try {
             $req = $request->validated();
             $reminder = Reminder::create([
                 ...$req,
                 'user_id' => auth()->id(),
             ]);
+            if (auth()->user()->is_reminder_alert) {
+                $this->scheduleNotifications($reminder);
+            }
+
             return $this->success('Reminder created', $reminder->toResponseArray(), HttpStatus::CREATED);
-        }catch (\Exception $exception){
+        } catch (\Exception $exception) {
             return $this->error($exception->getMessage(), null, HttpStatus::INTERNAL_SERVER_ERROR);
         }
+    }
+
+    protected function scheduleNotifications(Reminder $reminder): void
+    {
+        $sendAtList = $this->resolveSendAtDates($reminder);
+
+        $title = '⏰ Reminder: ' . $reminder->description;
+        $body  = $this->buildReminderBody($reminder);
+
+        foreach ($sendAtList as $sendAt) {
+            ScheduledNotification::create([
+                'user_id' => $reminder->user_id,
+                'title'   => $title,
+                'body'    => $body,
+                'send_at' => $sendAt,
+            ]);
+        }
+    }
+
+    /**
+     * Build the list of send_at datetimes based on recurrence.
+     *
+     * @return Carbon[]
+     */
+    protected function resolveSendAtDates(Reminder $reminder): array
+    {
+        $time = $reminder->due_time ?? '09:00';
+        [$hour, $minute] = array_map('intval', explode(':', $time));
+
+        $start = Carbon::parse($reminder->due_date)->setTime($hour, $minute);
+        $now   = now();
+
+        return match ($reminder->recurrence) {
+            'once'   => $start->isPast() ? [] : [$start],
+            'daily'  => $this->datesUntilMonthEnd($start, $now),
+            'weekly' => $this->weeklyDatesUntilMonthEnd($start, $now),
+        };
+    }
+
+    /**
+     * Daily occurrences from start through the end of the current month.
+     */
+    protected function datesUntilMonthEnd(Carbon $start, Carbon $now): array
+    {
+        $endOfMonth = $now->copy()->endOfMonth();
+        $cursor     = $start->copy();
+        $dates      = [];
+
+        while ($cursor->lte($endOfMonth)) {
+            if ($cursor->gte($now)) {
+                $dates[] = $cursor->copy();
+            }
+            $cursor->addDay();
+        }
+
+        return $dates;
+    }
+
+    /**
+     * Weekly occurrences (same weekday as due_date) through the end of the current month.
+     */
+    protected function weeklyDatesUntilMonthEnd(Carbon $start, Carbon $now): array
+    {
+        $endOfMonth = $now->copy()->endOfMonth();
+        $cursor     = $start->copy();
+        $dates      = [];
+
+        while ($cursor->lte($endOfMonth)) {
+            if ($cursor->gte($now)) {
+                $dates[] = $cursor->copy();
+            }
+            $cursor->addWeek();
+        }
+
+        return $dates;
+    }
+
+    protected function buildReminderBody(Reminder $reminder): string
+    {
+        $when = Carbon::parse($reminder->due_date)->format('M j, Y');
+        if ($reminder->due_time) {
+            $when .= ' at ' . Carbon::parse($reminder->due_time)->format('g:i A');
+        }
+
+        $parts = [$when];
+
+        if ($reminder->place) {
+            $parts[] = '📍 ' . $reminder->place;
+        }
+
+        if ($reminder->recurrence !== 'once') {
+            $parts[] = 'Repeats ' . $reminder->recurrence;
+        }
+
+        return implode(' • ', $parts);
     }
 
     // update the reminder complete status

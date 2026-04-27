@@ -29,9 +29,9 @@ class ReminderRequest extends FormRequest
             'description' => 'required|string|max:255',
             'priority'    => ['required', 'in:low,medium,high'],
             'category'    => ['required', new Enum(ReminderCategories::class)],
-            'due_time'    => 'nullable|date_format:H:i',
+            'due_time'    => 'required|date_format:H:i',
             'due_date'    => 'required|date|after_or_equal:today',
-            'recurrence'  => ['required', 'in:once,daily,weekly,monthly'],
+            'recurrence'  => ['required', 'in:once,daily,weekly'],
             'place'       => 'nullable|string|max:255',
             'note'        => 'nullable|string',
         ];
